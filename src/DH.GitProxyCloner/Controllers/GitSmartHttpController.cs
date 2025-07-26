@@ -188,7 +188,7 @@ public class UniversalGitProxyController : ControllerBase
 
         if (string.IsNullOrEmpty(requestPath))
         {
-            return Ok("Git Proxy Cloner is running. Usage: clone with your-domain.com/user/repo or your-domain.com/https://github.com/user/repo.git");
+            return HandleRootRequest();
         }
 
         // 尝试解析GitHub URL
@@ -201,7 +201,120 @@ public class UniversalGitProxyController : ControllerBase
         var fullTargetUrl = $"{githubUrl}{queryString}";
         _logger.LogInformation($"Universal proxy to: {fullTargetUrl}");
 
+        // 检查是否是简单的仓库访问（浏览器直接重定向）
+        if (IsSimpleRepoAccess(requestPath) && IsBrowserRequest())
+        {
+            return Redirect(githubUrl);
+        }
+
         return await ProxyToGithub(fullTargetUrl);
+    }
+
+    private IActionResult HandleRootRequest()
+    {
+        if (IsBrowserRequest())
+        {
+            // 返回 HTML 首页
+            var html = @"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Git Proxy Cloner</title>
+    <meta charset='utf-8'>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; margin: 40px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .example { background: #f6f8fa; padding: 16px; border-radius: 8px; margin: 16px 0; }
+        code { background: #f6f8fa; padding: 2px 6px; border-radius: 4px; font-family: 'Monaco', 'Consolas', monospace; }
+        h1 { color: #0366d6; }
+        h2 { color: #586069; margin-top: 32px; }
+        .usage-type { margin: 24px 0; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <h1>🚀 Git Proxy Cloner</h1>
+        <p>一个 GitHub 仓库代理服务，支持 Git 克隆和浏览器下载。</p>
+        
+        <h2>🔧 Git 克隆使用方法</h2>
+        <div class='usage-type'>
+            <h3>简化格式：</h3>
+            <div class='example'>
+                <code>git clone " + HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + @"/user/repo</code>
+            </div>
+        </div>
+        
+        <div class='usage-type'>
+            <h3>完整 GitHub URL：</h3>
+            <div class='example'>
+                <code>git clone " + HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + @"/https://github.com/user/repo.git</code>
+            </div>
+        </div>
+        
+        <h2>🌐 浏览器下载使用方法</h2>
+        <div class='usage-type'>
+            <h3>下载仓库 ZIP：</h3>
+            <div class='example'>
+                <code>" + HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + @"/user/repo/archive/main.zip</code>
+            </div>
+        </div>
+        
+        <div class='usage-type'>
+            <h3>下载原始文件：</h3>
+            <div class='example'>
+                <code>" + HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + @"/user/repo/raw/main/README.md</code>
+            </div>
+        </div>
+        
+        <div class='usage-type'>
+            <h3>浏览仓库（重定向到 GitHub）：</h3>
+            <div class='example'>
+                <code>" + HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + @"/user/repo</code>
+            </div>
+        </div>
+        
+        <h2>📝 示例</h2>
+        <div class='example'>
+            <p><strong>克隆仓库：</strong></p>
+            <code>git clone " + HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + @"/microsoft/vscode</code><br><br>
+            
+            <p><strong>下载 ZIP：</strong></p>
+            <code>wget " + HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + @"/microsoft/vscode/archive/main.zip</code><br><br>
+            
+            <p><strong>下载文件：</strong></p>
+            <code>curl " + HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + @"/microsoft/vscode/raw/main/package.json</code>
+        </div>
+    </div>
+</body>
+</html>";
+            return Content(html, "text/html");
+        }
+        else
+        {
+            // Git 客户端返回纯文本
+            return Ok("Git Proxy Cloner is running. Usage: clone with your-domain.com/user/repo or your-domain.com/https://github.com/user/repo.git");
+        }
+    }
+
+    private bool IsBrowserRequest()
+    {
+        var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+        var accept = HttpContext.Request.Headers["Accept"].ToString();
+        
+        // 检查是否是浏览器请求
+        return accept.Contains("text/html") || 
+               userAgent.Contains("Mozilla") || 
+               userAgent.Contains("Chrome") || 
+               userAgent.Contains("Safari") || 
+               userAgent.Contains("Edge") || 
+               userAgent.Contains("Firefox");
+    }
+
+    private bool IsSimpleRepoAccess(string requestPath)
+    {
+        // 检查是否是简单的 user/repo 访问（没有额外路径）
+        var match = Regex.Match(requestPath, @"^[^/]+/[^/]+$");
+        return match.Success;
     }
 
     private string ParseGithubUrl(string requestPath)
@@ -222,7 +335,14 @@ public class UniversalGitProxyController : ControllerBase
             var userRepo = match.Groups[1].Value;
             var path = match.Groups[2].Value;
             
-            // 如果没有.git后缀，自动添加
+            // 检查是否是浏览器下载请求（archive, raw, releases 等）
+            if (IsBrowserDownloadRequest(path))
+            {
+                // 浏览器下载请求不需要 .git 后缀
+                return $"https://github.com/{userRepo}{path}";
+            }
+            
+            // Git 协议请求需要 .git 后缀
             if (!userRepo.EndsWith(".git"))
             {
                 userRepo += ".git";
@@ -232,6 +352,32 @@ public class UniversalGitProxyController : ControllerBase
         }
 
         return string.Empty;
+    }
+
+    private bool IsBrowserDownloadRequest(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return false;
+
+        // 检查是否是浏览器下载相关的路径
+        var browserPaths = new[]
+        {
+            "/archive/",      // ZIP 下载: /archive/main.zip
+            "/releases/",     // 发布版本下载
+            "/raw/",          // 原始文件下载
+            "/blob/",         // 文件查看（重定向到 GitHub）
+            "/tree/",         // 目录查看（重定向到 GitHub）
+            "/commits/",      // 提交历史查看
+            "/issues/",       // 问题页面
+            "/pull/",         // 拉取请求
+            "/wiki/",         // Wiki 页面
+            "/actions/",      // GitHub Actions
+            "/security/",     // 安全页面
+            "/pulse/",        // 统计页面
+            "/graphs/"        // 图表页面
+        };
+
+        return browserPaths.Any(browserPath => path.StartsWith(browserPath));
     }
 
     private async Task<IActionResult> ProxyToGithub(string targetUrl)

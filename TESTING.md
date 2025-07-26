@@ -31,6 +31,31 @@ git clone http://localhost:5000/https://github.com/stilleshan/ServerStatus.git
 curl "http://localhost:5000/stilleshan/ServerStatus/info/refs?service=git-upload-pack"
 ```
 
+### 5. 测试浏览器访问（HTML 首页）
+```bash
+curl -H "Accept: text/html" http://localhost:5000
+```
+
+### 6. 测试 ZIP 下载
+```bash
+curl -L -o repo.zip "http://localhost:5000/stilleshan/ServerStatus/archive/main.zip"
+```
+
+### 7. 测试原始文件下载
+```bash
+curl "http://localhost:5000/stilleshan/ServerStatus/raw/main/README.md"
+```
+
+### 8. 测试浏览器重定向
+```bash
+curl -I "http://localhost:5000/stilleshan/ServerStatus"
+```
+
+### 9. 测试发布版本下载
+```bash
+curl -L "http://localhost:5000/microsoft/vscode/releases/latest/download/VSCode-win32-x64.zip"
+```
+
 ## 验证步骤
 
 1. **启动服务**
