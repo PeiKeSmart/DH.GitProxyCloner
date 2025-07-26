@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DH.GitProxyCloner": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
