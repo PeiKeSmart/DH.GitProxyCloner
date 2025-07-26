@@ -112,19 +112,23 @@ public class GitSmartHttpController : ControllerBase
         }
     }
 
-    private async Task CopyRequestBody(HttpRequestMessage request)
+    private Task CopyRequestBody(HttpRequestMessage request)
     {
         if (HttpContext.Request.ContentLength > 0)
         {
             var contentType = HttpContext.Request.ContentType ?? "application/x-git-upload-pack-request";
             
-            using var memoryStream = new MemoryStream();
-            await HttpContext.Request.Body.CopyToAsync(memoryStream);
-            memoryStream.Position = 0;
-
-            request.Content = new StreamContent(memoryStream);
+            // 直接使用Request.Body，避免不必要的内存复制
+            request.Content = new StreamContent(HttpContext.Request.Body);
             request.Content.Headers.TryAddWithoutValidation("Content-Type", contentType);
+            
+            if (HttpContext.Request.ContentLength.HasValue)
+            {
+                request.Content.Headers.TryAddWithoutValidation("Content-Length", 
+                    HttpContext.Request.ContentLength.Value.ToString());
+            }
         }
+        return Task.CompletedTask;
     }
 
     private void SetResponseHeaders(HttpResponseMessage response)
@@ -236,42 +240,20 @@ public class UniversalGitProxyController : ControllerBase
         {
             using var request = new HttpRequestMessage(new HttpMethod(HttpContext.Request.Method), targetUrl);
 
-            // 复制请求头
-            foreach (var header in HttpContext.Request.Headers)
+            // 复制重要的请求头
+            CopyImportantHeaders(request);
+
+            // 复制请求体（如果是POST请求）
+            if (HttpContext.Request.Method == "POST")
             {
-                if (ShouldCopyHeader(header.Key))
-                {
-                    request.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
-                }
+                await CopyRequestBodyToRequest(request);
             }
 
-            // 复制请求体
-            if (HttpContext.Request.Method == "POST" && HttpContext.Request.ContentLength > 0)
-            {
-                var bodyStream = new MemoryStream();
-                await HttpContext.Request.Body.CopyToAsync(bodyStream);
-                bodyStream.Position = 0;
-                request.Content = new StreamContent(bodyStream);
-                
-                if (!string.IsNullOrEmpty(HttpContext.Request.ContentType))
-                {
-                    request.Content.Headers.TryAddWithoutValidation("Content-Type", HttpContext.Request.ContentType);
-                }
-            }
-
+            // 发送请求
             using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
-            // 复制响应头
-            foreach (var header in response.Headers.Concat(response.Content.Headers))
-            {
-                if (ShouldCopyHeader(header.Key))
-                {
-                    HttpContext.Response.Headers.TryAdd(header.Key, header.Value.ToArray());
-                }
-            }
-
-            HttpContext.Response.StatusCode = (int)response.StatusCode;
-            await response.Content.CopyToAsync(HttpContext.Response.Body);
+            // 设置响应
+            await SetProxyResponse(response);
 
             return new EmptyResult();
         }
@@ -282,11 +264,97 @@ public class UniversalGitProxyController : ControllerBase
         }
     }
 
-    private static bool ShouldCopyHeader(string headerName)
+    private void CopyImportantHeaders(HttpRequestMessage request)
+    {
+        var importantHeaders = new[]
+        {
+            "Authorization", "User-Agent", "Accept", "Accept-Encoding", "Git-Protocol"
+        };
+
+        foreach (var headerName in importantHeaders)
+        {
+            if (HttpContext.Request.Headers.TryGetValue(headerName, out var values))
+            {
+                try
+                {
+                    request.Headers.TryAddWithoutValidation(headerName, values.ToArray());
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, $"Failed to copy header: {headerName}");
+                }
+            }
+        }
+    }
+
+    private async Task CopyRequestBodyToRequest(HttpRequestMessage request)
+    {
+        if (HttpContext.Request.ContentLength > 0)
+        {
+            // 对于Git协议，需要正确处理流
+            var contentType = HttpContext.Request.ContentType ?? "application/x-git-upload-pack-request";
+            
+            // 使用流来避免大文件的内存问题
+            var bodyStream = new MemoryStream();
+            await HttpContext.Request.Body.CopyToAsync(bodyStream);
+            bodyStream.Position = 0;
+            
+            request.Content = new StreamContent(bodyStream);
+            request.Content.Headers.TryAddWithoutValidation("Content-Type", contentType);
+            
+            if (HttpContext.Request.ContentLength.HasValue)
+            {
+                request.Content.Headers.TryAddWithoutValidation("Content-Length", 
+                    HttpContext.Request.ContentLength.Value.ToString());
+            }
+        }
+    }
+
+    private async Task SetProxyResponse(HttpResponseMessage response)
+    {
+        // 设置状态码
+        HttpContext.Response.StatusCode = (int)response.StatusCode;
+
+        // 复制重要的响应头
+        foreach (var header in response.Headers)
+        {
+            if (ShouldCopyResponseHeader(header.Key))
+            {
+                try
+                {
+                    HttpContext.Response.Headers.TryAdd(header.Key, header.Value.ToArray());
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, $"Failed to copy response header: {header.Key}");
+                }
+            }
+        }
+
+        foreach (var header in response.Content.Headers)
+        {
+            if (ShouldCopyResponseHeader(header.Key))
+            {
+                try
+                {
+                    HttpContext.Response.Headers.TryAdd(header.Key, header.Value.ToArray());
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, $"Failed to copy content header: {header.Key}");
+                }
+            }
+        }
+
+        // 流式复制响应体
+        await response.Content.CopyToAsync(HttpContext.Response.Body);
+    }
+
+    private static bool ShouldCopyResponseHeader(string headerName)
     {
         var skipHeaders = new[]
         {
-            "host", "connection", "transfer-encoding", "content-length", "upgrade"
+            "transfer-encoding", "connection", "upgrade", "server"
         };
         return !skipHeaders.Contains(headerName.ToLowerInvariant());
     }
