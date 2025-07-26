@@ -1,0 +1,6 @@
+@DH.GitProxyCloner_HostAddress = http://localhost:5167
+
+GET {{DH.GitProxyCloner_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
