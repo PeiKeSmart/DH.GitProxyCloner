@@ -370,3 +370,4 @@ src/HlktechFenLiu/Plugins/bin/*
 /src/HlktechIoT.Web/Areas/Device/Views/AppUser/Add.cshtml
 /src/HlktechIoT.Web/Areas/Device/Views/AppUser/Edit.cshtml
 /src/HlktechIoT.Web/Areas/Device/Views/AppUser/Users.cshtml
+/src/DH.GitProxyCloner/.config
