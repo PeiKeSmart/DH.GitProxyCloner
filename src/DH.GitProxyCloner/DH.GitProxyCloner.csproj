@@ -12,8 +12,8 @@
   <ItemGroup>
     <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-    <PackageReference Include="Pek.Common" Version="4.12.2025.724-beta0707" />
-    <PackageReference Include="Pek.NCube.Api" Version="4.13.2025.724-beta1202" />
+    <PackageReference Include="Pek.Common" Version="4.14.2025.905-beta0844" />
+    <PackageReference Include="Pek.NCube.Api" Version="4.14.2025.905-beta1233" />
   </ItemGroup>
 
 </Project>
