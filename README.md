@@ -1,68 +1,31 @@
 # Git Proxy Cloner
 
-一个用于代理 GitHub 仓库克隆的 ASP.NET Core 应用程序，支持通过代理服务器加速 Git 操作和 GitHub 网页浏览。
+一个用于代理 GitHub 仓库克隆的 ASP.NET Core 应用程序，支持通过代理服务器加速 Git 操作。
 
 ## 功能特性
 
 - 支持 Git Smart HTTP 协议
 - 代理 `git clone`、`git fetch`、`git push` 等操作
-- **新增**: 支持 GitHub 网页代理访问
-- **新增**: 支持搜索、仓库浏览、用户主页等功能
 - 支持多种 URL 格式
 - 流式数据传输，支持大型仓库
 - 可配置的超时和缓存设置
 
 ## 使用方法
 
-### Git 代理操作
-
-#### 1. 简化格式
+### 1. 简化格式
 ```bash
 git clone http://your-domain.com/user/repo
 ```
 
-#### 2. 完整 GitHub URL 格式
+### 2. 完整 GitHub URL 格式
 ```bash
 git clone http://your-domain.com/https://github.com/user/repo.git
 ```
 
-#### 3. 带路径的完整格式
+### 3. 带路径的完整格式
 ```bash
 git clone http://your-domain.com/user/repo.git
 ```
-
-### GitHub 网页代理 (新增功能)
-
-#### 1. 访问代理首页
-```
-http://your-domain.com/web/
-```
-
-#### 2. GitHub 搜索
-```bash
-# 搜索代码
-http://your-domain.com/web/search?q=repo%3AOwner%2FRepo%20keyword&type=code
-
-# 搜索仓库
-http://your-domain.com/web/search?q=keyword&type=repositories
-
-# 搜索用户
-http://your-domain.com/web/search?q=username&type=users
-```
-
-#### 3. 浏览仓库和用户
-```bash
-# 仓库主页
-http://your-domain.com/web/user/repo
-
-# 用户主页
-http://your-domain.com/web/username
-
-# GitHub Trending
-http://your-domain.com/web/trending
-```
-
-详细的 Web 代理使用说明请参考：[GitHub Web 代理指南](GitHub-Web-Proxy-Guide.md)
 
 ## 实现原理
 
