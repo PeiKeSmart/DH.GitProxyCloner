@@ -14,6 +14,7 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Pek.Common" Version="4.14.2025.905-beta0844" />
     <PackageReference Include="Pek.NCube.Api" Version="4.14.2025.905-beta1233" />
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
   </ItemGroup>
 
 </Project>
