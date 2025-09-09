@@ -1,5 +1,9 @@
 using DH.GitProxyCloner.Controllers;
 
+using NewLife.Log;
+
+XTrace.UseConsole();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
