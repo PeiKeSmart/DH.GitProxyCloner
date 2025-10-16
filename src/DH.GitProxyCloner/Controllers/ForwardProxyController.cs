@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Yarp.ReverseProxy.Forwarder;
 using System.Net;
+using NewLife.Log;
 
 namespace DH.GitProxyCloner.Controllers;
 
@@ -12,15 +13,11 @@ namespace DH.GitProxyCloner.Controllers;
 public class ForwardProxyController : ControllerBase
 {
     private readonly IHttpForwarder _httpForwarder;
-    private readonly ILogger<ForwardProxyController> _logger;
     private readonly HttpMessageInvoker _httpClient;
 
-    public ForwardProxyController(
-        IHttpForwarder httpForwarder, 
-        ILogger<ForwardProxyController> logger)
+    public ForwardProxyController(IHttpForwarder httpForwarder)
     {
         _httpForwarder = httpForwarder;
-        _logger = logger;
         
         // 创建用于转发的 HttpClient - 简化配置，专注于稳定性
         _httpClient = new HttpMessageInvoker(new SocketsHttpHandler()
@@ -54,7 +51,7 @@ public class ForwardProxyController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Testing connection to GitHub...");
+            XTrace.WriteLine("Testing connection to GitHub...");
             
             using var testClient = new HttpClient();
             testClient.Timeout = TimeSpan.FromSeconds(10);
@@ -70,12 +67,12 @@ public class ForwardProxyController : ControllerBase
                 Message = $"Successfully connected to GitHub. Status: {response.StatusCode}"
             };
             
-            _logger.LogInformation($"Connection test successful: {response.StatusCode}");
+            XTrace.WriteLine($"Connection test successful: {response.StatusCode}");
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Connection test failed");
+            XTrace.WriteException(ex);
             
             var result = new
             {
@@ -104,8 +101,8 @@ public class ForwardProxyController : ControllerBase
         var requestPath = HttpContext.Request.Path.Value?.TrimStart('/') ?? "";
         var queryString = HttpContext.Request.QueryString.Value ?? "";
 
-        _logger.LogInformation($"Incoming request path: '{requestPath}'");
-        _logger.LogInformation($"Query string: '{queryString}'");
+        XTrace.WriteLine($"Incoming request path: '{requestPath}'");
+        XTrace.WriteLine($"Query string: '{queryString}'");
 
         // 处理根路径请求
         if (string.IsNullOrEmpty(requestPath))
@@ -120,7 +117,7 @@ public class ForwardProxyController : ControllerBase
             return BadRequest("Invalid GitHub URL format");
         }
 
-        _logger.LogInformation($"Forward proxy request: {HttpContext.Request.Method} to {destinationPrefix} with path: {transformedPath}");
+        XTrace.WriteLine($"Forward proxy request: {HttpContext.Request.Method} to {destinationPrefix} with path: {transformedPath}");
 
         // 临时修改请求路径供YARP使用
         var originalPath = HttpContext.Request.Path;
@@ -150,7 +147,10 @@ public class ForwardProxyController : ControllerBase
                 var errorFeature = HttpContext.GetForwarderErrorFeature();
                 var exception = errorFeature?.Exception;
                 
-                _logger.LogError(exception, $"Proxy error: {error}");
+                if (exception != null)
+                    XTrace.WriteException(exception);
+                else
+                    XTrace.WriteLine($"Proxy error: {error}");
                 return StatusCode(502, $"Proxy error: {error}");
             }
 
@@ -166,11 +166,11 @@ public class ForwardProxyController : ControllerBase
     /// <summary>
     /// 构建目标服务器基础URL和转换后的路径
     /// </summary>
-    private (string destinationPrefix, string transformedPath) BuildDestinationAndPath(string requestPath)
+    private (String destinationPrefix, String transformedPath) BuildDestinationAndPath(String requestPath)
     {
         try
         {
-            _logger.LogInformation($"Building destination from path: '{requestPath}'");
+            XTrace.WriteLine($"Building destination from path: '{requestPath}'");
 
             // 情况1: 完整的 GitHub URL (https://github.com/...)
             if (requestPath.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
@@ -178,7 +178,7 @@ public class ForwardProxyController : ControllerBase
                 // 提取路径部分
                 var pathPart = requestPath.Substring("https://github.com".Length);
                 var result = ("https://github.com", pathPart);
-                _logger.LogInformation($"Case 1 - Full GitHub URL: {result.Item1} + {result.Item2}");
+                XTrace.WriteLine($"Case 1 - Full GitHub URL: {result.Item1} + {result.Item2}");
                 return result;
             }
 
@@ -188,7 +188,7 @@ public class ForwardProxyController : ControllerBase
                 // 提取路径部分
                 var pathPart = requestPath.Substring("github.com".Length);
                 var result = ("https://github.com", pathPart);
-                _logger.LogInformation($"Case 2 - GitHub domain: {result.Item1} + {result.Item2}");
+                XTrace.WriteLine($"Case 2 - GitHub domain: {result.Item1} + {result.Item2}");
                 return result;
             }
 
@@ -198,7 +198,7 @@ public class ForwardProxyController : ControllerBase
                 var webPath = requestPath.Substring(4); // 移除 "web/" 前缀
                 var pathPart = "/" + webPath;
                 var result = ("https://github.com", pathPart);
-                _logger.LogInformation($"Case 3 - Web proxy: {result.Item1} + {result.Item2}");
+                XTrace.WriteLine($"Case 3 - Web proxy: {result.Item1} + {result.Item2}");
                 return result;
             }
 
@@ -207,24 +207,24 @@ public class ForwardProxyController : ControllerBase
             {
                 var pathPart = "/" + requestPath;
                 var result = ("https://github.com", pathPart);
-                _logger.LogInformation($"Case 4 - Simple format: {result.Item1} + {result.Item2}");
+                XTrace.WriteLine($"Case 4 - Simple format: {result.Item1} + {result.Item2}");
                 return result;
             }
 
-            _logger.LogWarning($"No matching case for path: '{requestPath}'");
-            return (string.Empty, string.Empty);
+            XTrace.WriteLine($"No matching case for path: '{requestPath}'");
+            return (String.Empty, String.Empty);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, $"Failed to build destination for path: {requestPath}");
-            return (string.Empty, string.Empty);
+            XTrace.WriteLine($"Failed to build destination for path: {requestPath}, Error: {ex.Message}");
+            return (String.Empty, String.Empty);
         }
     }
 
     /// <summary>
     /// 判断是否是有效的 GitHub 路径
     /// </summary>
-    private static bool IsGitHubPath(string path)
+    private static Boolean IsGitHubPath(String path)
     {
         if (string.IsNullOrEmpty(path))
             return false;

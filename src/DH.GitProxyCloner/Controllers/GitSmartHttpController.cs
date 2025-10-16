@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using System.Text;
+using NewLife.Log;
 
 namespace DH.GitProxyCloner.Controllers;
 
@@ -8,12 +9,10 @@ namespace DH.GitProxyCloner.Controllers;
 public class GitSmartHttpController : ControllerBase
 {
     private readonly HttpClient _httpClient;
-    private readonly ILogger<GitSmartHttpController> _logger;
 
-    public GitSmartHttpController(HttpClient httpClient, ILogger<GitSmartHttpController> logger)
+    public GitSmartHttpController(HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _logger = logger;
     }
 
     // Git info/refs 请求（支持带 .git 后缀）
@@ -53,11 +52,11 @@ public class GitSmartHttpController : ControllerBase
         return await ProxyGitRequest(githubUrl);
     }
 
-    private async Task<IActionResult> ProxyGitRequest(string targetUrl)
+    private async Task<IActionResult> ProxyGitRequest(String targetUrl)
     {
         try
         {
-            _logger.LogInformation($"Proxying Git request to: {targetUrl}");
+            XTrace.WriteLine($"Proxying Git request to: {targetUrl}");
 
             // 创建代理请求
             using var request = new HttpRequestMessage(
@@ -86,7 +85,7 @@ public class GitSmartHttpController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error proxying Git request to {targetUrl}");
+            XTrace.WriteException(ex);
             return StatusCode(500, "Git proxy error");
         }
     }
@@ -118,7 +117,7 @@ public class GitSmartHttpController : ControllerBase
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, $"Failed to copy header: {headerName}");
+                    XTrace.WriteLine($"Failed to copy header: {headerName}, Error: {ex.Message}");
                 }
             }
         }
