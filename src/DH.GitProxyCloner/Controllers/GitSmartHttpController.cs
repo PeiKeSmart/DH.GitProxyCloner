@@ -16,26 +16,39 @@ public class GitSmartHttpController : ControllerBase
         _logger = logger;
     }
 
-    // Git info/refs 请求
+    // Git info/refs 请求（支持带 .git 后缀）
+    [HttpGet("{owner}/{repo}.git/info/refs")]
     [HttpGet("{owner}/{repo}/info/refs")]
     public async Task<IActionResult> GetInfoRefs(string owner, string repo, [FromQuery] string service)
     {
+        // 移除 repo 中可能存在的 .git 后缀（避免重复）
+        if (repo.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            repo = repo.Substring(0, repo.Length - 4);
+        
         var githubUrl = $"https://github.com/{owner}/{repo}.git/info/refs?service={service}";
         return await ProxyGitRequest(githubUrl);
     }
 
-    // Git upload-pack 请求（用于git clone/fetch）
+    // Git upload-pack 请求（用于git clone/fetch，支持带 .git 后缀）
+    [HttpPost("{owner}/{repo}.git/git-upload-pack")]
     [HttpPost("{owner}/{repo}/git-upload-pack")]
     public async Task<IActionResult> PostUploadPack(string owner, string repo)
     {
+        if (repo.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            repo = repo.Substring(0, repo.Length - 4);
+        
         var githubUrl = $"https://github.com/{owner}/{repo}.git/git-upload-pack";
         return await ProxyGitRequest(githubUrl);
     }
 
-    // Git receive-pack 请求（用于git push）
+    // Git receive-pack 请求（用于git push，支持带 .git 后缀）
+    [HttpPost("{owner}/{repo}.git/git-receive-pack")]
     [HttpPost("{owner}/{repo}/git-receive-pack")]
     public async Task<IActionResult> PostReceivePack(string owner, string repo)
     {
+        if (repo.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            repo = repo.Substring(0, repo.Length - 4);
+        
         var githubUrl = $"https://github.com/{owner}/{repo}.git/git-receive-pack";
         return await ProxyGitRequest(githubUrl);
     }
@@ -82,7 +95,6 @@ public class GitSmartHttpController : ControllerBase
     {
         var importantHeaders = new[]
         {
-            "Authorization",
             "User-Agent",
             "Accept",
             "Accept-Encoding",
@@ -110,6 +122,10 @@ public class GitSmartHttpController : ControllerBase
                 }
             }
         }
+
+        // 注意: 不转发 Authorization 头，以支持公共仓库的匿名访问
+        // GitHub 的公共仓库不需要身份验证，如果转发了无效的 Authorization 头会导致 401 错误
+        // 如果需要访问私有仓库，请使用 Personal Access Token 并通过环境变量或配置文件配置
     }
 
     private Task CopyRequestBody(HttpRequestMessage request)

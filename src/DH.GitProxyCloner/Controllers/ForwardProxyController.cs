@@ -134,12 +134,15 @@ public class ForwardProxyController : ControllerBase
                 ActivityTimeout = TimeSpan.FromMinutes(10) // 总体请求超时
             };
 
+            // 使用自定义转换器，移除 Authorization 头以支持公共仓库的匿名访问
+            var transformer = new AnonymousAccessTransformer();
+
             var error = await _httpForwarder.SendAsync(
                 HttpContext, 
                 destinationPrefix, 
                 _httpClient,
                 forwarderConfig,
-                HttpTransformer.Default);
+                transformer);
 
             // 检查转发是否成功
             if (error != ForwarderError.None)
@@ -470,4 +473,24 @@ wget {baseUrl}/user/repo/archive/main.zip
 </html>";
     }
 
+}
+
+/// <summary>
+/// 自定义 HTTP 转换器，用于移除 Authorization 头以支持公共仓库的匿名访问
+/// </summary>
+public class AnonymousAccessTransformer : HttpTransformer
+{
+    public override async ValueTask TransformRequestAsync(HttpContext httpContext, 
+        HttpRequestMessage proxyRequest, string destinationPrefix, CancellationToken cancellationToken)
+    {
+        // 调用默认的转换逻辑
+        await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix, cancellationToken);
+
+        // 移除 Authorization 头，让 GitHub 将请求视为匿名访问
+        // 这对于公共仓库是必需的，因为无效的 Authorization 头会导致 401 错误
+        proxyRequest.Headers.Remove("Authorization");
+        
+        // 注意: 如果需要访问私有仓库，可以在这里添加配置的 Personal Access Token
+        // 例如: proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("token", "your_pat_here");
+    }
 }
