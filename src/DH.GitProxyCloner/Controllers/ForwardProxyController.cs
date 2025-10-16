@@ -375,6 +375,52 @@ public class ForwardProxyController : ControllerBase
             border-radius: 6px; 
             margin: 20px 0;
         }}
+        .community {{ 
+            background: white; 
+            padding: 25px; 
+            border-radius: 8px; 
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }}
+        .community-links {{
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }}
+        .community-card {{
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }}
+        .community-card:hover {{
+            border-color: #007bff;
+            box-shadow: 0 4px 12px rgba(0,123,255,0.15);
+            transform: translateY(-2px);
+        }}
+        .community-card h4 {{
+            color: #007bff;
+            margin: 10px 0;
+            font-size: 1.3em;
+        }}
+        .community-card p {{
+            color: #6c757d;
+            margin: 10px 0 0 0;
+            line-height: 1.5;
+        }}
+        .community-icon {{
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }}
     </style>
 </head>
 <body>
@@ -443,6 +489,29 @@ curl -L {baseUrl}/user/repo/archive/main.zip -o repo.zip
             <li><strong>错误处理</strong>: 完善的错误处理和详细的日志记录</li>
             <li><strong>跨平台</strong>: 基于 .NET 9.0，支持 Windows、Linux、macOS</li>
         </ul>
+    </div>
+
+    <div class='community'>
+        <h2>&#128172; 加入社区交流</h2>
+        <p>遇到问题？想要交流？欢迎加入我们的技术社区！</p>
+        
+        <div class='community-links'>
+            <a href='https://lifes.fun' target='_blank' class='community-card'>
+                <div class='community-icon'>&#127881;</div>
+                <h4>Lifes.fun</h4>
+                <p>中文开发者社区<br>技术交流 · 问题反馈 · 经验分享</p>
+            </a>
+            
+            <a href='https://seeitt.com' target='_blank' class='community-card'>
+                <div class='community-icon'>&#127757;</div>
+                <h4>Seeitt.com</h4>
+                <p>International Community<br>Discussion · Feedback · Collaboration</p>
+            </a>
+        </div>
+        
+        <p style='margin-top: 20px; color: #6c757d; font-size: 0.9em;'>
+            &#128161; 提示：在社区中可以获取最新更新、报告 Bug、提出功能建议，或与其他开发者交流使用经验
+        </p>
     </div>
 
     <script>
@@ -530,17 +599,100 @@ public class AnonymousAccessTransformer : HttpTransformer
                 await httpContext.Response.WriteAsync($@"
 <!DOCTYPE html>
 <html>
-<head><title>代理提示</title><meta charset='utf-8'></head>
+<head>
+    <title>代理提示</title>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            margin: 40px auto;
+            max-width: 800px;
+            line-height: 1.6;
+            color: #333;
+            padding: 0 20px;
+        }}
+        .container {{
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }}
+        h1 {{
+            color: #dc3545;
+            border-bottom: 2px solid #dc3545;
+            padding-bottom: 10px;
+        }}
+        .info-box {{
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }}
+        .suggestions {{
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }}
+        .community {{
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }}
+        code {{
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            color: #e83e8c;
+        }}
+        a {{
+            color: #007bff;
+            text-decoration: none;
+        }}
+        a:hover {{
+            text-decoration: underline;
+        }}
+        ul {{
+            margin: 10px 0;
+        }}
+    </style>
+</head>
 <body>
-<h1>GitHub Web 代理限制</h1>
-<p>GitHub 尝试重定向到: <code>{location}</code></p>
-<p>由于 GitHub 的安全策略，Web 界面代理可能无法正常工作。</p>
-<p><strong>建议：</strong></p>
-<ul>
-<li>使用 Git 协议克隆: <code>git clone http://localhost:17856/user/repo</code></li>
-<li>访问原始文件: <code>http://localhost:17856/user/repo/raw/branch/file.txt</code></li>
-<li>下载压缩包: <code>http://localhost:17856/user/repo/archive/main.zip</code></li>
-</ul>
+<div class='container'>
+    <h1>&#9888; GitHub Web 代理限制</h1>
+    
+    <div class='info-box'>
+        <strong>&#128161; 检测到重定向:</strong><br>
+        GitHub 尝试重定向到: <code>{location}</code><br><br>
+        由于 GitHub 的安全策略和反爬虫机制，Web 界面的完整代理功能受到限制。
+    </div>
+    
+    <div class='suggestions'>
+        <strong>&#9989; 推荐的使用方式：</strong>
+        <ul>
+            <li><strong>Git 克隆</strong>: <code>git clone http://localhost:17856/user/repo</code></li>
+            <li><strong>原始文件</strong>: <code>http://localhost:17856/user/repo/raw/branch/file.txt</code></li>
+            <li><strong>压缩包</strong>: <code>http://localhost:17856/user/repo/archive/main.zip</code></li>
+        </ul>
+    </div>
+    
+    <div class='community'>
+        <strong>&#128172; 需要帮助？加入社区交流：</strong>
+        <ul>
+            <li><strong>中文社区</strong>: <a href='https://lifes.fun' target='_blank'>Lifes.fun</a> - 技术交流、问题反馈</li>
+            <li><strong>国际社区</strong>: <a href='https://seeitt.com' target='_blank'>Seeitt.com</a> - Discussion & Feedback</li>
+        </ul>
+        <p style='margin: 10px 0 0 0; color: #666; font-size: 0.9em;'>
+            在社区中可以获取最新更新、报告问题、提出建议，或与其他开发者交流使用经验
+        </p>
+    </div>
+</div>
 </body>
 </html>");
                 
