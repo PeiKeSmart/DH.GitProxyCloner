@@ -19,13 +19,14 @@ public class ForwardProxyController : ControllerBase
     {
         _httpForwarder = httpForwarder;
         
-        // 创建用于转发的 HttpClient - 简化配置，专注于稳定性
+        // 创建用于转发的 HttpClient - 配置为代理模式，处理 GitHub 重定向
         var handler = new SocketsHttpHandler()
         {
             UseProxy = false, // 禁用系统代理，直接连接以避免证书问题
-            AllowAutoRedirect = false, // YARP会处理重定向
-            AutomaticDecompression = DecompressionMethods.None, // YARP会处理压缩
-            UseCookies = false, // 禁用Cookie管理
+            AllowAutoRedirect = true, // 自动跟随重定向，避免将重定向传给客户端
+            MaxAutomaticRedirections = 10, // 最多跟随10次重定向
+            AutomaticDecompression = DecompressionMethods.All, // 自动解压缩响应内容
+            UseCookies = true, // 启用 Cookie 以维持 GitHub 会话
             ActivityHeadersPropagator = null,
             ConnectTimeout = TimeSpan.FromSeconds(60), // 增加连接超时时间
             PooledConnectionLifetime = TimeSpan.FromMinutes(15), // 连接池生命周期
@@ -473,20 +474,87 @@ curl -L {baseUrl}/user/repo/archive/main.zip -o repo.zip
 
 /// <summary>
 /// 自定义 HTTP 转换器，用于移除 Authorization 头以支持公共仓库的匿名访问
+/// 并确保代理行为正确，防止客户端直接跳转到 GitHub
 /// </summary>
 public class AnonymousAccessTransformer : HttpTransformer
 {
     public override async ValueTask TransformRequestAsync(HttpContext httpContext, 
-        HttpRequestMessage proxyRequest, string destinationPrefix, CancellationToken cancellationToken)
+        HttpRequestMessage proxyRequest, String destinationPrefix, CancellationToken cancellationToken)
     {
         // 调用默认的转换逻辑
         await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix, cancellationToken);
 
         // 移除 Authorization 头，让 GitHub 将请求视为匿名访问
-        // 这对于公共仓库是必需的，因为无效的 Authorization 头会导致 401 错误
         proxyRequest.Headers.Remove("Authorization");
         
-        // 注意: 如果需要访问私有仓库，可以在这里添加配置的 Personal Access Token
-        // 例如: proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("token", "your_pat_here");
+        // 确保请求头正确配置，模拟真实浏览器
+        proxyRequest.Headers.TryAddWithoutValidation("User-Agent", 
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        
+        proxyRequest.Headers.TryAddWithoutValidation("Accept", 
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
+        
+        proxyRequest.Headers.TryAddWithoutValidation("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
+        proxyRequest.Headers.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate, br");
+        proxyRequest.Headers.TryAddWithoutValidation("Cache-Control", "max-age=0");
+        
+        // 移除可能暴露代理身份的头
+        proxyRequest.Headers.Remove("X-Forwarded-For");
+        proxyRequest.Headers.Remove("X-Forwarded-Host");
+        proxyRequest.Headers.Remove("X-Forwarded-Proto");
+        
+        XTrace.WriteLine($"Proxying request to: {proxyRequest.RequestUri}");
+    }
+
+    public override async ValueTask<Boolean> TransformResponseAsync(HttpContext httpContext, 
+        HttpResponseMessage? proxyResponse, CancellationToken cancellationToken)
+    {
+        if (proxyResponse != null)
+        {
+            var statusCode = (Int32)proxyResponse.StatusCode;
+            XTrace.WriteLine($"GitHub Response: StatusCode={statusCode}, Location={proxyResponse.Headers.Location?.ToString() ?? "null"}");
+            
+            // 处理重定向响应：阻止客户端跳转，返回空内容或错误提示
+            if (statusCode >= 300 && statusCode < 400)
+            {
+                var location = proxyResponse.Headers.Location?.ToString();
+                XTrace.WriteLine($"Blocking redirect from GitHub to: {location}");
+                
+                // 移除 Location 头
+                proxyResponse.Headers.Remove("Location");
+                
+                // 修改状态码为 200，但返回提示信息
+                httpContext.Response.StatusCode = 200;
+                httpContext.Response.ContentType = "text/html; charset=utf-8";
+                
+                await httpContext.Response.WriteAsync($@"
+<!DOCTYPE html>
+<html>
+<head><title>代理提示</title><meta charset='utf-8'></head>
+<body>
+<h1>GitHub Web 代理限制</h1>
+<p>GitHub 尝试重定向到: <code>{location}</code></p>
+<p>由于 GitHub 的安全策略，Web 界面代理可能无法正常工作。</p>
+<p><strong>建议：</strong></p>
+<ul>
+<li>使用 Git 协议克隆: <code>git clone http://localhost:17856/user/repo</code></li>
+<li>访问原始文件: <code>http://localhost:17856/user/repo/raw/branch/file.txt</code></li>
+<li>下载压缩包: <code>http://localhost:17856/user/repo/archive/main.zip</code></li>
+</ul>
+</body>
+</html>");
+                
+                return false; // 返回 false 表示我们已经处理了响应，YARP 不要再继续
+            }
+        }
+        
+        // 调用默认的转换逻辑
+        var result = await base.TransformResponseAsync(httpContext, proxyResponse, cancellationToken);
+        
+        // 确保移除任何可能的重定向头
+        httpContext.Response.Headers.Remove("Location");
+        httpContext.Response.Headers.Remove("Refresh");
+        
+        return result;
     }
 }
