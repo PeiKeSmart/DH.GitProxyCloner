@@ -302,11 +302,13 @@ public class ForwardProxyController : ControllerBase
         }}
         .example {{ 
             background: #e9ecef; 
-            padding: 15px; 
+            padding: 18px; 
             border-radius: 6px; 
             margin: 15px 0; 
             font-family: 'Monaco', 'Consolas', monospace;
             overflow-x: auto;
+            line-height: 1.8;
+            font-size: 14px;
         }}
         .code {{ 
             background: #f1f3f4; 
@@ -317,18 +319,11 @@ public class ForwardProxyController : ControllerBase
         }}
         h1 {{ margin: 0; font-size: 2.5em; }}
         h2 {{ color: #495057; margin-top: 0; }}
-        h3 {{ color: #007bff; margin-bottom: 10px; }}
-        .feature-grid {{ 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-            gap: 20px; 
-            margin: 20px 0; 
-        }}
-        .feature-card {{ 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        h3 {{ 
+            color: #007bff; 
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
         }}
         .search-form {{ 
             background: white; 
@@ -367,16 +362,16 @@ public class ForwardProxyController : ControllerBase
 </head>
 <body>
     <div class='header'>
-        <h1>🚀 GitHub Forward Proxy</h1>
+        <h1>&#128640; GitHub Forward Proxy</h1>
         <p>高性能 GitHub 正向代理服务，支持 Git 协议和 Web 访问</p>
     </div>
 
     <div class='status'>
-        ✅ 代理服务运行正常 | 基于 YARP 技术 | 支持流式传输
+        &#9989; 代理服务运行正常 | 基于 YARP 技术 | 支持流式传输
     </div>
 
     <div class='search-form'>
-        <h3>🔍 快速访问</h3>
+        <h3>&#128269; 快速访问</h3>
         <form id='accessForm'>
             <input type='text' id='repoPath' placeholder='输入 GitHub 路径，如: microsoft/vscode 或完整URL' />
             <button type='submit'>访问</button>
@@ -384,67 +379,52 @@ public class ForwardProxyController : ControllerBase
         <p><small>支持格式: user/repo、github.com/user/repo、https://github.com/user/repo</small></p>
     </div>
 
-    <div class='feature-grid'>
-        <div class='feature-card'>
-            <h3>🔧 Git 克隆</h3>
-            <div class='example'>git clone {baseUrl}/microsoft/vscode</div>
-            <p>支持所有 Git 操作：clone、fetch、push、pull</p>
-        </div>
-
-        <div class='feature-card'>
-            <h3>🌐 Web 浏览</h3>
-            <div class='example'>{baseUrl}/web/microsoft/vscode</div>
-            <p>通过代理访问 GitHub 网页界面</p>
-        </div>
-
-        <div class='feature-card'>
-            <h3>📁 文件下载</h3>
-            <div class='example'>{baseUrl}/microsoft/vscode/raw/main/package.json</div>
-            <p>直接下载仓库中的文件</p>
-        </div>
-
-        <div class='feature-card'>
-            <h3>📦 ZIP 下载</h3>
-            <div class='example'>{baseUrl}/microsoft/vscode/archive/main.zip</div>
-            <p>下载整个仓库的压缩包</p>
-        </div>
-    </div>
-
     <div class='section'>
-        <h2>📋 使用说明</h2>
+        <h2>&#128218; 快速使用指南</h2>
         
-        <h3>1. Git 操作</h3>
+        <h3>&#128295; Git 操作（支持 .git 后缀）</h3>
         <div class='example'>
+# 克隆仓库<br>
 git clone {baseUrl}/user/repo<br>
-git clone {baseUrl}/https://github.com/user/repo.git<br>
+git clone {baseUrl}/user/repo.git<br>
+<br>
+# 其他操作<br>
+git fetch {baseUrl}/user/repo<br>
+git pull {baseUrl}/user/repo main<br>
 git remote add origin {baseUrl}/user/repo
         </div>
 
-        <h3>2. Web 访问</h3>
+        <h3>&#127760; Web 浏览器访问</h3>
         <div class='example'>
-# 浏览仓库首页<br>
-{baseUrl}/web/user/repo<br><br>
-# 搜索代码<br>
-{baseUrl}/web/search?q=keyword&type=code
+# 浏览仓库<br>
+{baseUrl}/web/user/repo<br>
+<br>
+# 查看文件<br>
+{baseUrl}/user/repo/blob/main/README.md<br>
+<br>
+# 下载单个文件<br>
+{baseUrl}/user/repo/raw/main/file.txt
         </div>
 
-        <h3>3. 文件操作</h3>
+        <h3>&#128230; 下载压缩包</h3>
         <div class='example'>
-# 查看文件内容<br>
-curl {baseUrl}/user/repo/raw/main/README.md<br><br>
-# 下载仓库ZIP<br>
-wget {baseUrl}/user/repo/archive/main.zip
+# 下载 ZIP<br>
+wget {baseUrl}/user/repo/archive/main.zip<br>
+curl -L {baseUrl}/user/repo/archive/main.zip -o repo.zip
         </div>
     </div>
 
     <div class='section'>
-        <h2>⚡ 技术特性</h2>
+        <h2>&#9889; 技术特性</h2>
         <ul>
-            <li><strong>高性能</strong>: 基于 YARP 反向代理技术</li>
-            <li><strong>流式传输</strong>: 支持大文件的高效传输</li>
-            <li><strong>协议支持</strong>: 完整支持 Git Smart HTTP 协议</li>
-            <li><strong>请求透传</strong>: 保持原始请求头和认证信息</li>
-            <li><strong>错误处理</strong>: 完善的错误处理和日志记录</li>
+            <li><strong>匿名访问</strong>: 公共仓库无需 GitHub 账号，直接克隆</li>
+            <li><strong>.git 后缀支持</strong>: user/repo 和 user/repo.git 两种格式都支持</li>
+            <li><strong>高性能</strong>: 基于 YARP 反向代理技术，零拷贝转发</li>
+            <li><strong>流式传输</strong>: 支持大文件的高效传输，内存占用低</li>
+            <li><strong>协议完整</strong>: 完整支持 Git Smart HTTP 协议（clone、fetch、push）</li>
+            <li><strong>多种格式</strong>: 支持简化格式、完整 URL、Web 代理等多种访问方式</li>
+            <li><strong>错误处理</strong>: 完善的错误处理和详细的日志记录</li>
+            <li><strong>跨平台</strong>: 基于 .NET 9.0，支持 Windows、Linux、macOS</li>
         </ul>
     </div>
 
