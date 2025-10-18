@@ -426,7 +426,7 @@ public class ForwardProxyController : ControllerBase
 <body>
     <div class='header'>
         <h1>&#128640; GitHub Forward Proxy</h1>
-        <p>高性能 GitHub 正向代理服务，支持 Git 协议和 Web 访问</p>
+        <p>高性能 GitHub 正向代理服务，专为 Git 协议和文件下载优化</p>
     </div>
 
     <div class='status'>
@@ -445,50 +445,62 @@ public class ForwardProxyController : ControllerBase
     <div class='section'>
         <h2>&#128218; 快速使用指南</h2>
         
-        <h3>&#128295; Git 操作（支持 .git 后缀）</h3>
+        <h3>&#128295; Git 操作（完美支持，推荐使用）</h3>
         <div class='example'>
-# 克隆仓库<br>
+# 克隆仓库（支持 .git 后缀）<br>
 git clone {baseUrl}/user/repo<br>
 git clone {baseUrl}/user/repo.git<br>
 <br>
-# 其他操作<br>
+# 其他 Git 操作<br>
 git fetch {baseUrl}/user/repo<br>
 git pull {baseUrl}/user/repo main<br>
+git push {baseUrl}/user/repo main<br>
 git remote add origin {baseUrl}/user/repo
         </div>
 
-        <h3>&#127760; Web 浏览器访问</h3>
+        <h3>&#128193; 下载单个文件（Raw 格式）</h3>
         <div class='example'>
-# 浏览仓库<br>
-{baseUrl}/web/user/repo<br>
+# 使用 curl 下载<br>
+curl {baseUrl}/user/repo/raw/main/README.md<br>
+curl {baseUrl}/user/repo/raw/main/src/file.txt -o file.txt<br>
 <br>
-# 查看文件<br>
-{baseUrl}/user/repo/blob/main/README.md<br>
+# 使用 wget 下载<br>
+wget {baseUrl}/user/repo/raw/main/README.md<br>
 <br>
-# 下载单个文件<br>
+# 浏览器直接访问<br>
 {baseUrl}/user/repo/raw/main/file.txt
         </div>
 
-        <h3>&#128230; 下载压缩包</h3>
+        <h3>&#128230; 下载完整仓库压缩包</h3>
         <div class='example'>
-# 下载 ZIP<br>
-wget {baseUrl}/user/repo/archive/main.zip<br>
-curl -L {baseUrl}/user/repo/archive/main.zip -o repo.zip
+# 下载 ZIP 格式<br>
+curl -L {baseUrl}/user/repo/archive/refs/heads/main.zip -o repo.zip<br>
+wget {baseUrl}/user/repo/archive/refs/heads/main.zip<br>
+<br>
+# 下载特定分支<br>
+curl -L {baseUrl}/user/repo/archive/refs/heads/develop.zip -o repo-develop.zip<br>
+<br>
+# 下载特定标签<br>
+curl -L {baseUrl}/user/repo/archive/refs/tags/v1.0.0.zip -o repo-v1.0.0.zip
         </div>
     </div>
 
     <div class='section'>
         <h2>&#9889; 技术特性</h2>
         <ul>
-            <li><strong>匿名访问</strong>: 公共仓库无需 GitHub 账号，直接克隆</li>
-            <li><strong>.git 后缀支持</strong>: user/repo 和 user/repo.git 两种格式都支持</li>
-            <li><strong>高性能</strong>: 基于 YARP 反向代理技术，零拷贝转发</li>
-            <li><strong>流式传输</strong>: 支持大文件的高效传输，内存占用低</li>
-            <li><strong>协议完整</strong>: 完整支持 Git Smart HTTP 协议（clone、fetch、push）</li>
-            <li><strong>多种格式</strong>: 支持简化格式、完整 URL、Web 代理等多种访问方式</li>
-            <li><strong>错误处理</strong>: 完善的错误处理和详细的日志记录</li>
-            <li><strong>跨平台</strong>: 基于 .NET 9.0，支持 Windows、Linux、macOS</li>
+            <li><strong>&#128160; 匿名访问</strong>: 公共仓库无需 GitHub 账号，直接克隆</li>
+            <li><strong>&#128204; .git 后缀兼容</strong>: user/repo 和 user/repo.git 两种格式都支持</li>
+            <li><strong>&#9889; 高性能</strong>: 基于 YARP 反向代理技术，零拷贝转发</li>
+            <li><strong>&#128640; 流式传输</strong>: 支持大文件的高效传输，内存占用低</li>
+            <li><strong>&#128279; 协议完整</strong>: 完整支持 Git Smart HTTP 协议（clone、fetch、push）</li>
+            <li><strong>&#128193; 多种下载</strong>: 支持 Git 克隆、Raw 文件、ZIP/TAR 压缩包</li>
+            <li><strong>&#128295; 错误处理</strong>: 完善的错误处理和详细的日志记录</li>
+            <li><strong>&#127760; 跨平台</strong>: 基于 .NET 9.0，支持 Windows、Linux、macOS</li>
         </ul>
+        
+        <div style='background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-top: 20px; border-radius: 4px;'>
+            <strong>&#9888; 注意：</strong> GitHub Web UI 代理功能受限于 GitHub 的安全策略，推荐使用 Git 协议或文件下载方式。
+        </div>
     </div>
 
     <div class='community'>
@@ -498,13 +510,13 @@ curl -L {baseUrl}/user/repo/archive/main.zip -o repo.zip
         <div class='community-links'>
             <a href='https://lifes.fun' target='_blank' class='community-card'>
                 <div class='community-icon'>&#127881;</div>
-                <h4>Lifes.fun</h4>
+                <h4>万相社区</h4>
                 <p>中文开发者社区<br>技术交流 · 问题反馈 · 经验分享</p>
             </a>
             
             <a href='https://seeitt.com' target='_blank' class='community-card'>
                 <div class='community-icon'>&#127757;</div>
-                <h4>Seeitt.com</h4>
+                <h4>Seeitt</h4>
                 <p>International Community<br>Discussion · Feedback · Collaboration</p>
             </a>
         </div>
@@ -521,17 +533,27 @@ curl -L {baseUrl}/user/repo/archive/main.zip -o repo.zip
             if (path) {{
                 // 检测路径类型并构建正确的URL
                 let targetUrl;
-                if (path.startsWith('http')) {{
-                    // 完整URL，直接使用
-                    targetUrl = '{baseUrl}/' + path;
+                if (path.startsWith('http://') || path.startsWith('https://')) {{
+                    // 完整URL，提取路径部分
+                    try {{
+                        const url = new URL(path);
+                        const ghPath = url.pathname.replace(/^\\//, '');
+                        targetUrl = '{baseUrl}/' + ghPath + '/archive/refs/heads/main.zip';
+                        alert('将下载该仓库的 ZIP 压缩包');
+                    }} catch(e) {{
+                        targetUrl = '{baseUrl}/' + path;
+                    }}
                 }} else if (path.startsWith('github.com/')) {{
-                    // github.com开头
-                    targetUrl = '{baseUrl}/' + path;
+                    // github.com开头，提取路径
+                    const ghPath = path.replace('github.com/', '');
+                    targetUrl = '{baseUrl}/' + ghPath + '/archive/refs/heads/main.zip';
+                    alert('将下载该仓库的 ZIP 压缩包');
                 }} else {{
-                    // 简单格式，添加web前缀用于浏览
-                    targetUrl = '{baseUrl}/web/' + path;
+                    // 简单格式 user/repo，下载压缩包
+                    targetUrl = '{baseUrl}/' + path + '/archive/refs/heads/main.zip';
+                    alert('将下载该仓库的 ZIP 压缩包。\\n\\n如需 Git 克隆，请使用命令：\\ngit clone {baseUrl}/' + path);
                 }}
-                window.open(targetUrl, '_blank');
+                window.location.href = targetUrl;
             }}
         }});
     </script>
@@ -685,8 +707,8 @@ public class AnonymousAccessTransformer : HttpTransformer
     <div class='community'>
         <strong>&#128172; 需要帮助？加入社区交流：</strong>
         <ul>
-            <li><strong>中文社区</strong>: <a href='https://lifes.fun' target='_blank'>Lifes.fun</a> - 技术交流、问题反馈</li>
-            <li><strong>国际社区</strong>: <a href='https://seeitt.com' target='_blank'>Seeitt.com</a> - Discussion & Feedback</li>
+            <li><strong>中文社区</strong>: <a href='https://lifes.fun' target='_blank'>万相社区</a> - 技术交流、问题反馈</li>
+            <li><strong>国际社区</strong>: <a href='https://seeitt.com' target='_blank'>Seeitt</a> - Discussion & Feedback</li>
         </ul>
         <p style='margin: 10px 0 0 0; color: #666; font-size: 0.9em;'>
             在社区中可以获取最新更新、报告问题、提出建议，或与其他开发者交流使用经验
